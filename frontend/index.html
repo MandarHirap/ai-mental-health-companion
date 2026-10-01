@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Mental Health Companion</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg: #f7f7f8;
+            --sidebar: #202123;
+            --sidebar-hover: #2a2b32;
+            --text: #202123;
+            --muted: #6b7280;
+            --border: #e5e7eb;
+            --user: #e8f1ff;
+            --assistant: #ffffff;
+            --primary: #2563eb;
+            --topbar: #ffffff;
+            --input-bg: #ffffff;
+            --icon-bg: #dbeafe;
+            --shadow: rgba(0, 0, 0, 0.06);
+        }
+
+        body.dark {
+            --bg: #171717;
+            --sidebar: #111111;
+            --sidebar-hover: #262626;
+            --text: #f5f5f5;
+            --muted: #a1a1aa;
+            --border: #383838;
+            --user: #263b55;
+            --assistant: #242424;
+            --primary: #3b82f6;
+            --topbar: #1f1f1f;
+            --input-bg: #242424;
+            --icon-bg: #263b55;
+            --shadow: rgba(0, 0, 0, 0.25);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+                         Roboto, Helvetica, Arial, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            background: var(--bg);
+            color: var(--text);
+            transition: background 0.2s ease, color 0.2s ease;
+        }
+
+        button,
+        textarea {
+            font-family: inherit;
+        }
+
+        /* =========================
+           APP
+           ========================= */
+
+        .app {
+            display: flex;
+            width: 100%;
+            height: 100vh;
+        }
+
+        /* =========================
+           SIDEBAR
+           ========================= */
+
+        .sidebar {
+            width: 260px;
+            height: 100vh;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            background: var(--sidebar);
+            color: #fff;
+        }
+
+        .sidebar-header {
+            padding: 16px;
+        }
+
+        .new-chat-btn {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 14px;
+            border: 1px solid #565869;
+            border-radius: 8px;
+            background: transparent;
+            color: #fff;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .new-chat-btn:hover {
+            background: var(--sidebar-hover);
+        }
+
+        .new-chat-icon {
+            font-size: 20px;
+            line-height: 1;
+        }
+
+        .conversation-section {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+
+        .conversation-title {
+            padding: 10px;
+            color: #9ca3af;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .conversation-list {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .conversation-item {
+            width: 100%;
+            padding: 10px 12px;
+            border: 0;
+            border-radius: 7px;
+            background: transparent;
+            color: #ececf1;
+            text-align: left;
+            font-size: 14px;
+            cursor: pointer;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .conversation-item:hover,
+        .conversation-item.active {
+            background: var(--sidebar-hover);
+        }
+
+        .sidebar-footer {
+            padding: 14px 16px;
+            border-top: 1px solid #343541;
+        }
+
+        .brand-small {
+            color: #9ca3af;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        /* =========================
+           MAIN
+           ========================= */
+
+        .main {
+            position: relative;
+            flex: 1;
+            min-width: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .topbar {
+            position: relative;
+            z-index: 10;
+            height: 60px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            padding: 0 22px;
+            background: var(--topbar);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .mobile-menu {
+            display: none;
+            margin-right: 12px;
+            border: 0;
+            background: transparent;
+            color: var(--text);
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .topbar-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .topbar-subtitle {
+            margin-left: 10px;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        /* Theme toggle is fixed to the TOP-RIGHT corner of the app. */
+        .theme-toggle {
+            position: absolute;
+            top: 10px;
+            right: 14px;
+            z-index: 20;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--topbar);
+            color: var(--text);
+            font-size: 18px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px var(--shadow);
+            transition: transform 0.15s ease, background 0.2s ease;
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.05);
+            background: var(--bg);
+        }
+
+        /* =========================
+           CHAT
+           ========================= */
+
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px 20px 130px;
+        }
+
+        .messages {
+            width: 100%;
+            max-width: 850px;
+            margin: 0 auto;
+        }
+
+        .welcome {
+            min-height: calc(100vh - 220px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .welcome-icon {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 18px;
+            background: var(--icon-bg);
+            font-size: 30px;
+        }
+
+        .welcome h1 {
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .welcome p {
+            max-width: 520px;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        .welcome-note {
+            max-width: 550px;
+            margin-top: 18px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        /* =========================
+           MESSAGES
+           ========================= */
+
+        .message {
+            display: flex;
+            gap: 14px;
+            margin-bottom: 26px;
+            line-height: 1.6;
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message-avatar {
+            width: 34px;
+            height: 34px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 9px;
+            font-size: 16px;
+        }
+
+        .assistant .message-avatar {
+            background: var(--icon-bg);
+        }
+
+        .user .message-avatar {
+            order: 2;
+            background: #e5e7eb;
+        }
+
+        .message-content {
+            max-width: 75%;
+            padding: 12px 16px;
+            border-radius: 16px;
+            font-size: 15px;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        .user .message-content {
+            padding: 11px 15px;
+            border-radius: 16px 16px 4px 16px;
+            background: var(--user);
+        }
+
+        .assistant .message-content {
+            border: 1px solid var(--border);
+            border-radius: 4px 16px 16px 16px;
+            background: var(--assistant);
+        }
+
+        /* =========================
+           THINKING
+           ========================= */
+
+        .thinking {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 0;
+        }
+
+        .thinking span {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #9ca3af;
+            animation: thinking 1.4s infinite;
+        }
+
+        .thinking span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .thinking span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes thinking {
+            0%, 60%, 100% {
+                opacity: 0.3;
+                transform: translateY(0);
+            }
+
+            30% {
+                opacity: 1;
+                transform: translateY(-3px);
+            }
+        }
+
+        /* =========================
+           INPUT
+           ========================= */
+
+        .input-area {
+            position: absolute;
+            z-index: 5;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            padding: 20px 20px 24px;
+            background: linear-gradient(
+                to top,
+                var(--bg) 70%,
+                transparent
+            );
+        }
+
+        .input-wrapper {
+            position: relative;
+            max-width: 850px;
+            margin: 0 auto;
+        }
+
+        .message-input {
+            width: 100%;
+            min-height: 56px;
+            max-height: 180px;
+            padding: 16px 58px 16px 16px;
+            resize: none;
+            outline: none;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            background: var(--input-bg);
+            color: var(--text);
+            font-size: 15px;
+            line-height: 1.4;
+            box-shadow: 0 2px 8px var(--shadow);
+        }
+
+        .message-input::placeholder {
+            color: var(--muted);
+        }
+
+        .message-input:focus {
+            border-color: #9ca3af;
+        }
+
+        .send-button {
+            position: absolute;
+            right: 9px;
+            bottom: 9px;
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 0;
+            border-radius: 9px;
+            background: var(--primary);
+            color: #fff;
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        .send-button:hover {
+            background: #1d4ed8;
+        }
+
+        .send-button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .input-hint {
+            margin-top: 8px;
+            color: var(--muted);
+            font-size: 11px;
+            text-align: center;
+        }
+
+        /* =========================
+           ERROR
+           ========================= */
+
+        .error-message {
+            margin: 10px 0 20px;
+            padding: 12px 14px;
+            border: 1px solid #fecaca;
+            border-radius: 10px;
+            background: #fef2f2;
+            color: #991b1b;
+            font-size: 14px;
+        }
+
+        body.dark .error-message {
+            border-color: #7f1d1d;
+            background: #3b1515;
+            color: #fecaca;
+        }
+
+        /* =========================
+           MOBILE
+           ========================= */
+
+        @media (max-width: 700px) {
+            .sidebar {
+                position: fixed;
+                top: 0;
+                bottom: 0;
+                left: -260px;
+                z-index: 100;
+                transition: left 0.25s ease;
+            }
+
+            .sidebar.open {
+                left: 0;
+            }
+
+            .mobile-menu {
+                display: block;
+            }
+
+            .topbar {
+                padding-right: 64px;
+            }
+
+            .topbar-subtitle {
+                display: none;
+            }
+
+            .input-area {
+                padding: 12px;
+            }
+
+            .chat-container {
+                padding-right: 12px;
+                padding-left: 12px;
+            }
+
+            .message-content {
+                max-width: 85%;
+            }
+
+            .welcome h1 {
+                font-size: 23px;
+            }
+
+            .theme-toggle {
+                right: 10px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app">
+
+        <!-- SIDEBAR -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <button class="new-chat-btn" id="newChatButton">
+                    <span class="new-chat-icon">＋</span>
+                    <span>New Chat</span>
+                </button>
+            </div>
+
+            <div class="conversation-section">
+                <div class="conversation-title">Conversations</div>
+                <div class="conversation-list" id="conversationList"></div>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="brand-small">
+                    AI Mental Health Companion<br>
+                    Supportive AI • Not a medical professional
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN -->
+        <main class="main">
+
+            <header class="topbar">
+                <button class="mobile-menu" id="mobileMenuButton">☰</button>
+
+                <div class="topbar-title">
+                    AI Mental Health Companion
+                </div>
+
+                <div class="topbar-subtitle">
+                    A safe space to talk
+                </div>
+
+                <!-- TOP-RIGHT THEME TOGGLE -->
+                <button
+                    class="theme-toggle"
+                    id="themeToggle"
+                    title="Switch to dark theme"
+                    aria-label="Toggle light and dark theme"
+                >🌙</button>
+            </header>
+
+            <!-- CHAT -->
+            <div class="chat-container" id="chatContainer">
+                <div class="messages" id="messages">
+                    <div class="welcome" id="welcomeScreen">
+                        <div class="welcome-icon">💙</div>
+
+                        <h1>How are you feeling today?</h1>
+
+                        <p>
+                            I'm here to listen and help you think
+                            through what you're experiencing.
+                            You can talk about stress, anxiety,
+                            relationships, work, or anything
+                            that's on your mind.
+                        </p>
+
+                        <div class="welcome-note">
+                            This companion provides supportive
+                            conversation and general educational
+                            information. It is not a doctor,
+                            therapist, or emergency service.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- INPUT -->
+            <div class="input-area">
+                <div class="input-wrapper">
+                    <textarea
+                        id="messageInput"
+                        class="message-input"
+                        placeholder="Message your mental health companion..."
+                        rows="1"
+                    ></textarea>
+
+                    <button
+                        id="sendButton"
+                        class="send-button"
+                        title="Send message"
+                        aria-label="Send message"
+                    >↑</button>
+                </div>
+
+                <div class="input-hint">
+                    Enter to send • Shift + Enter for a new line
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        /* =====================================================
+           CONFIGURATION
+           ===================================================== */
+
+        const API_URL = "http://127.0.0.1:8000";
+
+
+        /* =====================================================
+           STATE
+           ===================================================== */
+
+        let currentConversationId = null;
+
+        let conversations = JSON.parse(
+            localStorage.getItem("mh_conversations") || "[]"
+        );
+
+
+        /* =====================================================
+           DOM ELEMENTS
+           ===================================================== */
+
+        const messagesContainer =
+            document.getElementById("messages");
+
+        const messageInput =
+            document.getElementById("messageInput");
+
+        const sendButton =
+            document.getElementById("sendButton");
+
+        const newChatButton =
+            document.getElementById("newChatButton");
+
+        const conversationList =
+            document.getElementById("conversationList");
+
+        const chatContainer =
+            document.getElementById("chatContainer");
+
+        const sidebar =
+            document.getElementById("sidebar");
+
+        const mobileMenuButton =
+            document.getElementById("mobileMenuButton");
+
+        const themeToggle =
+            document.getElementById("themeToggle");
+
+
+        /* =====================================================
+           THEME
+           ===================================================== */
+
+        function applyTheme(theme) {
+            const isDark = theme === "dark";
+
+            document.body.classList.toggle("dark", isDark);
+
+            themeToggle.textContent = isDark ? "☀️" : "🌙";
+
+            themeToggle.title = isDark
+                ? "Switch to light theme"
+                : "Switch to dark theme";
+        }
+
+        function toggleTheme() {
+            const isDark =
+                document.body.classList.contains("dark");
+
+            const newTheme =
+                isDark ? "light" : "dark";
+
+            localStorage.setItem(
+                "mh_theme",
+                newTheme
+            );
+
+            applyTheme(newTheme);
+        }
+
+        themeToggle.addEventListener(
+            "click",
+            toggleTheme
+        );
+
+        const savedTheme =
+            localStorage.getItem("mh_theme") || "light";
+
+        applyTheme(savedTheme);
+
+
+        /* =====================================================
+           NEW CHAT
+           ===================================================== */
+
+        newChatButton.addEventListener(
+            "click",
+            startNewChat
+        );
+
+        function startNewChat() {
+            currentConversationId = null;
+
+            messagesContainer.innerHTML = "";
+
+            messagesContainer.appendChild(
+                createWelcomeScreen()
+            );
+
+            messageInput.value = "";
+
+            resizeTextarea();
+            renderConversationList();
+            closeMobileSidebar();
+
+            messageInput.focus();
+        }
+
+        function createWelcomeScreen() {
+            const div =
+                document.createElement("div");
+
+            div.className = "welcome";
+
+            div.innerHTML = `
+                <div class="welcome-icon">💙</div>
+
+                <h1>How are you feeling today?</h1>
+
+                <p>
+                    I'm here to listen and help you think
+                    through what you're experiencing.
+                    You can talk about stress, anxiety,
+                    relationships, work, or anything
+                    that's on your mind.
+                </p>
+
+                <div class="welcome-note">
+                    This companion provides supportive
+                    conversation and general educational
+                    information. It is not a doctor,
+                    therapist, or emergency service.
+                </div>
+            `;
+
+            return div;
+        }
+
+
+        /* =====================================================
+           SEND MESSAGE
+           ===================================================== */
+
+        sendButton.addEventListener(
+            "click",
+            sendMessage
+        );
+
+        messageInput.addEventListener(
+            "keydown",
+            function(event) {
+                if (
+                    event.key === "Enter" &&
+                    !event.shiftKey
+                ) {
+                    event.preventDefault();
+                    sendMessage();
+                }
+            }
+        );
+
+        async function sendMessage() {
+            const message =
+                messageInput.value.trim();
+
+            if (!message || sendButton.disabled) {
+                return;
+            }
+
+            const welcome =
+                messagesContainer.querySelector(".welcome");
+
+            if (welcome) {
+                welcome.remove();
+            }
+
+            addMessage("user", message);
+
+            messageInput.value = "";
+            resizeTextarea();
+
+            const thinking =
+                addThinkingIndicator();
+
+            sendButton.disabled = true;
+
+            try {
+                const response =
+                    await fetch(`${API_URL}/chat`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            conversation_id:
+                                currentConversationId,
+                            message: message
+                        })
+                    });
+
+                if (!response.ok) {
+                    throw new Error(
+                        `Server returned ${response.status}`
+                    );
+                }
+
+                const data =
+                    await response.json();
+
+                thinking.remove();
+
+                if (currentConversationId === null) {
+                    currentConversationId =
+                        data.conversation_id;
+
+                    createConversation(
+                        currentConversationId,
+                        message
+                    );
+                }
+
+                addMessage(
+                    "assistant",
+                    data.response
+                );
+
+                saveConversationList();
+                renderConversationList();
+
+            } catch (error) {
+                console.error(
+                    "Chat error:",
+                    error
+                );
+
+                thinking.remove();
+
+                addErrorMessage(
+                    "I couldn't connect to the backend. " +
+                    "Please make sure the FastAPI server " +
+                    "is running on port 8000."
+                );
+
+            } finally {
+                sendButton.disabled = false;
+                messageInput.focus();
+            }
+        }
+
+
+        /* =====================================================
+           MESSAGE RENDERING
+           ===================================================== */
+
+        function addMessage(role, content) {
+            const message =
+                document.createElement("div");
+
+            message.className =
+                `message ${role}`;
+
+            const avatar =
+                document.createElement("div");
+
+            avatar.className =
+                "message-avatar";
+
+            avatar.textContent =
+                role === "user" ? "👤" : "💙";
+
+            const messageContent =
+                document.createElement("div");
+
+            messageContent.className =
+                "message-content";
+
+            // textContent prevents HTML/JS injection.
+            messageContent.textContent = content;
+
+            message.appendChild(avatar);
+            message.appendChild(messageContent);
+
+            messagesContainer.appendChild(message);
+
+            scrollToBottom();
+        }
+
+
+        function addThinkingIndicator() {
+            const message =
+                document.createElement("div");
+
+            message.className =
+                "message assistant";
+
+            const avatar =
+                document.createElement("div");
+
+            avatar.className =
+                "message-avatar";
+
+            avatar.textContent = "💙";
+
+            const content =
+                document.createElement("div");
+
+            content.className =
+                "message-content";
+
+            const thinking =
+                document.createElement("div");
+
+            thinking.className = "thinking";
+
+            for (let i = 0; i < 3; i++) {
+                const dot =
+                    document.createElement("span");
+
+                thinking.appendChild(dot);
+            }
+
+            content.appendChild(thinking);
+            message.appendChild(avatar);
+            message.appendChild(content);
+
+            messagesContainer.appendChild(message);
+
+            scrollToBottom();
+
+            return message;
+        }
+
+
+        function addErrorMessage(messageText) {
+            const error =
+                document.createElement("div");
+
+            error.className =
+                "error-message";
+
+            error.textContent = messageText;
+
+            messagesContainer.appendChild(error);
+
+            scrollToBottom();
+        }
+
+
+        /* =====================================================
+           SCROLLING
+           ===================================================== */
+
+        function scrollToBottom() {
+            setTimeout(() => {
+                chatContainer.scrollTo({
+                    top: chatContainer.scrollHeight,
+                    behavior: "smooth"
+                });
+            }, 50);
+        }
+
+
+        /* =====================================================
+           TEXTAREA
+           ===================================================== */
+
+        messageInput.addEventListener(
+            "input",
+            resizeTextarea
+        );
+
+        function resizeTextarea() {
+            messageInput.style.height = "auto";
+
+            messageInput.style.height =
+                Math.min(
+                    messageInput.scrollHeight,
+                    180
+                ) + "px";
+        }
+
+
+        /* =====================================================
+           CONVERSATIONS
+           ===================================================== */
+
+        function createConversation(
+            id,
+            firstMessage
+        ) {
+            const title =
+                firstMessage.length > 40
+                    ? firstMessage.substring(0, 40) + "..."
+                    : firstMessage;
+
+            conversations.unshift({
+                id: id,
+                title: title,
+                createdAt: new Date().toISOString()
+            });
+
+            saveConversationList();
+            renderConversationList();
+        }
+
+
+        function saveConversationList() {
+            localStorage.setItem(
+                "mh_conversations",
+                JSON.stringify(conversations)
+            );
+        }
+
+
+        function renderConversationList() {
+            conversationList.innerHTML = "";
+
+            conversations.forEach(
+                function(conversation) {
+                    const button =
+                        document.createElement("button");
+
+                    button.className =
+                        "conversation-item";
+
+                    if (
+                        conversation.id ===
+                        currentConversationId
+                    ) {
+                        button.classList.add("active");
+                    }
+
+                    button.textContent =
+                        conversation.title;
+
+                    button.addEventListener(
+                        "click",
+                        function() {
+                            currentConversationId =
+                                conversation.id;
+
+                            /*
+                             * The current backend does not yet
+                             * expose a GET conversation-history
+                             * endpoint, so selecting an old chat
+                             * sets its ID for future messages.
+                             */
+                            messagesContainer.innerHTML = "";
+
+                            messagesContainer.appendChild(
+                                createWelcomeScreen()
+                            );
+
+                            renderConversationList();
+                            closeMobileSidebar();
+                            messageInput.focus();
+                        }
+                    );
+
+                    conversationList.appendChild(button);
+                }
+            );
+        }
+
+
+        /* =====================================================
+           MOBILE SIDEBAR
+           ===================================================== */
+
+        mobileMenuButton.addEventListener(
+            "click",
+            function() {
+                sidebar.classList.toggle("open");
+            }
+        );
+
+        function closeMobileSidebar() {
+            sidebar.classList.remove("open");
+        }
+
+
+        /* =====================================================
+           STARTUP
+           ===================================================== */
+
+        renderConversationList();
+        messageInput.focus();
+    </script>
+</body>
+</html>
